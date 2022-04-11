@@ -16,7 +16,6 @@ struct gate{
     string conflicts[3];
 };
 
-//int getLength(string * gatepathp);
 void gateData(gate * gatesp, string * gatepathp);
 
 
@@ -38,22 +37,6 @@ int main() {
 
 //void setInitTemp (){
 //    // initialise a SA run with temp values in the range [0.88, 0.99]
-//};
-
-//int getLength(string * gatepathp){
-//    string line;
-//    int len = 0;
-//    fstream file (*gatepathp, ios::in);
-//    if(file.is_open()){
-//        while(getline(file, line)){
-//            ++len;
-//        }
-//    }
-//    else
-//        cout << "Could not open file at location" << *gatepathp << endl;
-//
-//    cout << len << endl;
-//    return len;
 //};
 
 

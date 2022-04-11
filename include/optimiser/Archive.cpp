@@ -3,3 +3,15 @@
 //
 
 #include "Archive.h"
+
+Archive(float temp){
+    temperature = temp;
+}
+
+void attainment_surface_sampling() {
+
+}
+
+void update_archive() {
+
+}

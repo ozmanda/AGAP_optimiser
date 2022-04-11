@@ -5,9 +5,14 @@
 #ifndef OPTIMISER_SOLUTION_H
 #define OPTIMISER_SOLUTION_H
 
+#include "vector"
+using namespace std;
 
 class Solution {
-
+    vector<vector<int>> assignment;
+    vector<float> values;
+    float energy;
+    Solution generate_neighbour();
 };
 
 

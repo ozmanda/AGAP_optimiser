@@ -3,3 +3,8 @@
 //
 
 #include "Solution.h"
+using namespace std;
+
+Solution generate_neighbour() {
+    return Solution();
+}
