@@ -14,59 +14,30 @@ SA::SA(vector<gate> g, vector<Flight> f, string * gateConflictPath):nGates(g.siz
     emptyAssignment = vector_matrix(nGates, nFlights);
     flightConflicts = find_flight_conflicts(flights);
     gateConflicts = convert_to_bool(parse_file(gateConflictPath), nGates, nGates);
-}
-
-// Public functions to set values from outside the function
-void SA::set_initial_solution() {
-    current_solution = greedy();
-}
-
-void SA::set_initial_temperature() {
+    currentSolution =  greedy();
     temperature = calculate_initial_temperature();
+    epoch = Epoch(temperature, currentSolution);
 }
 
-void SA::update_temperature() {
-    temperature = 5.52;
+// Public functions used outside of the calss
+
+void SA::run_optimiser() {
+    // run optimiser while the evaluate_termination() function does NOT return true
+    while (not evaluate_termination()){
+        currentSolution = epoch.run_epoch();
+    }
 }
 
 // FUNCTIONS FOR PRIVATE CALCULATIONS
 Solution SA::greedy() {
-    // create new instance of Soltion to put results in and fill assignment
+    // create new instance of Solution to put results in and fill assignment
     Solution greedySolution;
     greedySolution.assignment = emptyAssignment;
-
+    bool assigned;
     for (int flight = 0; flight < nFlights; ++flight) {
-        bool assigned = false;
+        assigned = false;
         for (int gate = 0; gate < nGates; ++gate) {
-            // true until proven unable to host the A/C
-            bool available = true;
-            // either the gate can handle both NB and WB or it has one size which must == that of the A/C
-            if (gates[gate].body.size() != 2 and gates[gate].body[0] != flights[flight].body){
-                available = false;
-                continue;
-            }
-            // for each conflicting flight ...
-            for (int conflictFlight = 0; conflictFlight < nFlights; ++conflictFlight) {
-                if (flight == conflictFlight) { continue; }
-                if (flightConflicts[flight][conflictFlight]){
-                    // evaluate if it assigned to this gate
-                    if (greedySolution.assignment[gate][flight] == 1){
-                        available = false;
-                        break;
-                    }
-                    // evaluate if it assigned to a conflicting gate
-                    for (int conflictGate = 0; conflictGate < nGates; ++conflictGate) {
-                        if (gateConflicts[gate][conflictGate] and greedySolution.assignment[conflictGate][conflictFlight] == 1){
-                            available = false;
-                            break;
-                        }
-                    }
-                    if (not available){
-                        break;
-                    }
-                }
-            }
-            if (available){
+            if (gate_availability(&greedySolution, flight, gate)){
                 greedySolution.assignment[gate][flight] = 1;
                 assigned = true;
             } else continue;
@@ -101,6 +72,37 @@ vector<vector<bool>> SA::find_flight_conflicts(vector<Flight> flights) const {
         conflictingFlights.push_back(row);
     }
     return conflictingFlights;
+}
+
+bool SA::gate_availability(Solution * greedySolution, int flightIndex, int gateIndex) {
+    // true until proven unable to host the A/C
+    bool available = true;
+    // either the gate can handle both NB and WB or it has one size which must == that of the A/C
+    if (gates[gateIndex].body.size() != 2 and gates[gateIndex].body[0] != flights[flightIndex].body){
+        return false;
+    }
+    // for each conflicting flight ...
+    for (int conflictFlight = 0; conflictFlight < nFlights; ++conflictFlight) {
+        if (flightIndex == conflictFlight) { continue; }
+        if (flightConflicts[flightIndex][conflictFlight]){
+            // evaluate if it assigned to this gate
+            if (greedySolution->assignment[gateIndex][flightIndex] == 1){
+                return false; break;
+            }
+            // evaluate if it assigned to a conflicting gate
+            for (int conflictGate = 0; conflictGate < nGates; ++conflictGate) {
+                if (gateConflicts[gateIndex][conflictGate] and greedySolution->assignment[conflictGate][conflictFlight] == 1){
+                    return false; break;
+                }
+            }
+        }
+    }
+    return true;
+}
+
+
+bool SA::evaluate_termination() {
+    return false;
 }
 
 

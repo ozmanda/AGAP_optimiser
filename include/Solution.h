@@ -14,7 +14,6 @@ public:
     vector<vector<int>> assignment;
     vector<float> values;
     float energy;
-    Solution generate_neighbour();
 };
 
 

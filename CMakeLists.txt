@@ -3,4 +3,4 @@ project(optimiser)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(optimiser src/main.cpp include/optimiser/SA.cpp include/optimiser/SA.h include/optimiser/Archive.cpp include/optimiser/Archive.h include/optimiser/Epoch.cpp include/optimiser/Epoch.h include/optimiser/Solution.cpp include/optimiser/Solution.h include/optimiser/Flight.cpp include/optimiser/Flight.h)
+add_executable(optimiser src/main.cpp include/SA.cpp include/SA.h include/Archive.cpp include/Archive.h include/Epoch.cpp include/Epoch.h include/Solution.cpp include/Solution.h include/Flight.cpp include/Flight.h src/utils.cpp src/utils.h)

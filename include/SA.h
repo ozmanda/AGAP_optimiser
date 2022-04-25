@@ -13,31 +13,30 @@
 #include "../src/utils.h"
 
 class SA {
+public:
+    SA(vector<gate> gates, vector<Flight> flights, string * gateConflictPath);
+    // Functions to be used from outside the class
+    void run_optimiser();
+    bool evaluate_termination();
+    // Variables which must be visible from outside the class
+    Solution currentSolution;
+    vector<gate> gates;
+    vector<Flight> flights;
 private:
-    float calculate_initial_temperature();
+    const int nGates, nFlights;
     vector<vector<bool>> flightConflicts;
     vector<vector<bool>> gateConflicts;
     Archive archive;
     float temperature;
     Epoch epoch;
-    vector<gate> gates;
-    vector<Flight> flights;
     vector<vector<int>> emptyAssignment;
-
-    const int nGates, nFlights;
     // functions for private calculations
     vector<vector<bool>> find_flight_conflicts(vector<Flight> flights) const;
     Solution greedy();
-public:
+    float calculate_initial_temperature();
+    bool gate_availability(Solution * greedySolution, int flightIndex, int gateIndex);
+    bool algorithm_termination();
 
-    SA(vector<gate> gates, vector<Flight> flights, string * gateConflictPath);
-    // Functions to set values from outside the class
-    void set_initial_solution();
-    void set_initial_temperature();
-    void update_temperature();
-
-    Solution candidate_solution;
-    Solution current_solution;
 };
 
 
