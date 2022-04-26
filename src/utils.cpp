@@ -40,8 +40,17 @@ vector<vector<string>> parse_file(string * filename){
 vector<gate> gateData(string * gatepathp){
     vector<vector<string>> content = parse_file(gatepathp);
     vector<gate> gates;
+    vector<string> bothbodies;
     // iterate through content and create gate struct to push back on the vector
     gate currentGate;
+    // add the apron gate to the list of gates
+    currentGate.name = "Apron";
+    currentGate.body.push_back("NB");
+    currentGate.body.push_back("WB");
+    currentGate.preferenceValue = 100000;
+    gates.push_back(currentGate);
+
+    // iterate through the gates given in the file
     for (int i = 1; i < content.size(); ++i) {
         currentGate.name = content[i][0];
         currentGate.body = comma_separate(& content[i][2]);

@@ -38,8 +38,8 @@ private:
     Solution generate_neighbour();
     void insert_move();
     void interval_exchange_move();
-    void interval_next(interval * flightInterval);
-    void interval_previous(interval * flightInterval);
+    void next_flight(interval * flightInterval);
+    void prior_flight(interval * flightInterval);
     bool interval_compatible(interval * A, interval * B);
     void apron_exchange_move();
     int sample_conflicting_flight(int flightIndex);
