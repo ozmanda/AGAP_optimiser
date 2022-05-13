@@ -3,13 +3,14 @@
 //
 
 #include "Archive.h"
+//using namespace std;
 
-// public function called by epoch to update epoch archive
-void update_archive() {
+
+void Archive::update_archive() {
 
 }
 
-// private function called by update_archive to fill the front
-void attainment_surface_sampling() {
+
+void Archive::attainment_surface_sampling() {
 
 }

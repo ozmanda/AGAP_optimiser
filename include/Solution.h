@@ -6,14 +6,29 @@
 #define OPTIMISER_SOLUTION_H
 
 #include "vector"
-using namespace std;
+#include "../src/utils.h"
+#include "Flight.h"
 
 class Solution {
 public:
-    // assignment matrix: vector of length (nFlights) containing vectors of length (nGates)
+    // Functions which need to be accessed from outside the class
+    Solution();
+    Solution(vector<gate> * gatespointer, vector<Flight> * flightspointer);
+    void set_objective_functions();
+
+    // Values which need to be accessed from outside the class
     vector<vector<int>> assignment;
-    vector<float> values;
-    float energy;
+    double gateVariance;
+    int apronAssignments;
+
+private:
+    // pointers to values outside of the class
+    vector<gate> * gatesp;
+    vector<Flight> * flightsp;
+
+    // functions only required within the class (objective function value calculation
+    void calculate_gate_idle_variance();
+    void nflights_assigned_to_apron();
 };
 
 

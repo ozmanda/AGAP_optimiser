@@ -14,28 +14,26 @@
 
 class SA {
 public:
-    SA(vector<gate> gates, vector<Flight> flights, string * gateConflictPath);
+    SA(vector<gate> * gates, vector<Flight> * flights, string * gateConflictPath);
     // Functions to be used from outside the class
     void run_optimiser();
-    bool evaluate_termination();
     // Variables which must be visible from outside the class
     Solution currentSolution;
-    vector<gate> gates;
-    vector<Flight> flights;
+    vector<gate> * gates;
+    vector<Flight> * flights;
+    Archive archive;
 private:
     const int nGates, nFlights;
     vector<vector<bool>> flightConflicts;
     vector<vector<bool>> gateConflicts;
-    Archive archive;
     float temperature;
     Epoch epoch;
     vector<vector<int>> emptyAssignment;
     // functions for private calculations
-    vector<vector<bool>> find_flight_conflicts(vector<Flight> flights) const;
+    vector<vector<bool>> find_flight_conflicts(vector<Flight> * flights) const;
     Solution greedy();
     float calculate_initial_temperature();
     bool gate_availability(Solution * greedySolution, int flightIndex, int gateIndex);
-    bool algorithm_termination();
 
 };
 

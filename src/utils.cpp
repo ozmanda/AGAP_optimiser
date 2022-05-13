@@ -43,6 +43,7 @@ vector<gate> gateData(string * gatepathp){
     vector<string> bothbodies;
     // iterate through content and create gate struct to push back on the vector
     gate currentGate;
+
     // add the apron gate to the list of gates
     currentGate.name = "Apron";
     currentGate.body.push_back("NB");
@@ -59,6 +60,22 @@ vector<gate> gateData(string * gatepathp){
     }
     gates.shrink_to_fit();
     return gates;
+};
+
+vector<vector<int>> gateConflicts(string * gateconflictsp){
+    vector<vector<string>> conflictsString = parse_file(gateconflictsp);
+    vector<vector<int>> conflictsInteger;
+    for (int gateIndex1 = 0; gateIndex1 < conflictsString.size(); ++gateIndex1) {
+        vector<int> rowInteger;
+        for (int gateIndex2 = 0; gateIndex2 < conflictsString.size(); ++gateIndex2) {
+            rowInteger.push_back(stoi(conflictsString[gateIndex1][gateIndex2]));
+        }
+        rowInteger.shrink_to_fit();
+        if (rowInteger.size() != conflictsString.size()){
+            throw logic_error("Gate conflict row size error");
+        }
+        conflictsInteger.push_back(rowInteger);
+    }
 };
 
 vector<Flight> flightData(string * flightplanpathp){
@@ -106,14 +123,16 @@ struct tm time_parser(string datetime){
 
 vector<vector<bool>> convert_to_bool(vector<vector<string>> original, const int xdim, const int ydim){
     vector<vector<bool>> converted;
-    for (int i = 0; i < xdim; ++i) {
+    for (int i = 1; i < xdim; ++i) {
         vector<bool> row;
-        for (int j = 0; j < ydim; ++j) {
+        for (int j = 1; j < ydim; ++j) {
             if (stoi(original[i][j]) == 1){
                 row.push_back(true);
             } else row.push_back(false);
         }
+        converted.push_back(row);
     }
+    cout << converted[0][0] << endl;
     return converted;
 }
 
@@ -161,7 +180,7 @@ vector<vector<bool>> vector_matrix_bool(int x, int y){
 };
 
 
-int random_number(int min, int max){
+int random_number(int min, unsigned long long max){
     srand(time(NULL));   // set random seed to time, ensures every run provides different results
     int randNum = rand()%(max-min + 1) + min;
     return randNum;

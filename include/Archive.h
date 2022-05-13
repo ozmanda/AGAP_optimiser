@@ -9,13 +9,11 @@
 
 class Archive {
 public:
+    vector<Solution> nondominated;
+    vector<Solution> samples;
     void update_archive();
 private:
-    vector<Solution> nondominating;
-    vector<Solution> samples;
     void attainment_surface_sampling();
-    float temperature;
-
 };
 
 
