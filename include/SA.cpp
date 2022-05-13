@@ -12,15 +12,18 @@ using namespace std;
 SA::SA(vector<gate> * g, vector<Flight> * f, string * gateConflictPath):nGates(g->size()), nFlights(f->size()) {
     gates = g;
     flights = f;
+
+    // create a basic empty vector for gate assignment and calculate conflict matrices
     emptyAssignment = vector_matrix(nGates, nFlights);
     flightConflicts = find_flight_conflicts(flights);
     gateConflicts = convert_to_bool(parse_file(gateConflictPath), nGates, nGates);
+
+    // Determine initial solution using greedy algorithm and set their values
     currentSolution =  greedy();
+    currentSolution.set_objective_functions();
     temperature = calculate_initial_temperature();
     epoch = Epoch(&temperature, &currentSolution, flights, gates, &gateConflicts, &flightConflicts);
 }
-
-// Public functions used outside of the calss
 
 void SA::run_optimiser() {
     // run optimiser while the evaluate_termination() function does NOT return true
@@ -34,8 +37,6 @@ void SA::run_optimiser() {
     }
 }
 
-
-// FUNCTIONS FOR PRIVATE CALCULATIONS
 Solution SA::greedy() {
     // create new instance of Solution to put results in and fill assignment
     Solution greedySolution;
@@ -47,6 +48,7 @@ Solution SA::greedy() {
             if (gate_availability(&greedySolution, flight, gate)){
                 greedySolution.assignment[gate][flight] = 1;
                 assigned = true;
+                break;
             } else continue;
         }
         if (not assigned){
@@ -59,9 +61,8 @@ Solution SA::greedy() {
 }
 
 
-
 float SA::calculate_initial_temperature() {
-    return 0;
+    return 98.75;
 }
 
 
@@ -91,24 +92,19 @@ bool SA::gate_availability(Solution * greedySolution, int flightIndex, int gateI
     // for each conflicting flight ...
     for (int conflictFlight = 0; conflictFlight < nFlights; ++conflictFlight) {
         if (flightIndex == conflictFlight) { continue; }
-        if (flightConflicts[flightIndex][conflictFlight]){
+        if (flightConflicts[flightIndex][conflictFlight] == 1){
             // evaluate if it assigned to this gate
             if (greedySolution->assignment[gateIndex][flightIndex] == 1){
-                return false; break;
+                return false;
             }
             // evaluate if it assigned to a conflicting gate
             for (int conflictGate = 0; conflictGate < nGates; ++conflictGate) {
+                if (conflictGate == gateIndex){ continue; } else
                 if (gateConflicts[gateIndex][conflictGate] and greedySolution->assignment[conflictGate][conflictFlight] == 1){
-                    return false; break;
+                    return false;
                 }
             }
         }
     }
     return true;
 }
-
-
-
-
-
-

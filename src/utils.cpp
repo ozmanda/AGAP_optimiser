@@ -76,6 +76,7 @@ vector<vector<int>> gateConflicts(string * gateconflictsp){
         }
         conflictsInteger.push_back(rowInteger);
     }
+    return conflictsInteger;
 };
 
 vector<Flight> flightData(string * flightplanpathp){

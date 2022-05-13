@@ -33,7 +33,6 @@ Epoch::Epoch() {
 
 }
 
-
 // public functions called by SA to conduct an epoch
 Solution Epoch::run_epoch() {
     // conduct one epoch of the SA algorithm and provide current best solution to SA optimiser
