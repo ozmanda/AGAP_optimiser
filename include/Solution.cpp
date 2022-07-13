@@ -7,15 +7,17 @@
 #include "vector"
 #include "numeric"
 #include "cmath"
+#include "iostream"
 using namespace std;
 
 
 Solution::Solution() {
 }
 
-Solution::Solution(vector<gate> * gatespointer, vector<Flight> * flightspointer) {
-    gatesp = gatespointer;
-    flightsp = flightspointer;
+Solution::Solution(vector<gate> * gatesp, vector<Flight> * flightsp) {
+    gatesp = gatesp;
+    flightsp = flightsp;
+    assignment = vector_matrix(gatesp->size(), flightsp->size());
 }
 
 
@@ -30,6 +32,7 @@ void Solution::calculate_gate_idle_variance() {
     for (int flightIndex = 0; flightIndex < flightsp->size(); ++flightIndex) {
         long long timediff = 100000;
         for (int gateIndex = 0; gateIndex < gatesp->size(); ++gateIndex) {
+            vector<vector<int>> assignment_view = assignment;
             if (assignment[gateIndex][flightIndex] != 1) {continue;}
             for (int priorFlightIndex = 0; priorFlightIndex < flightsp->size(); ++priorFlightIndex) {
                 if (assignment[gateIndex][flightIndex] != 1 and

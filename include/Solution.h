@@ -13,19 +13,18 @@ class Solution {
 public:
     // Functions which need to be accessed from outside the class
     Solution();
-    Solution(vector<gate> * gatespointer, vector<Flight> * flightspointer);
+    Solution(vector<gate> * gatesp, vector<Flight> * flightsp);
     void set_objective_functions();
 
     // Values which need to be accessed from outside the class
     vector<vector<int>> assignment;
     double gateVariance;
     int apronAssignments;
-
-private:
     // pointers to values outside of the class
     vector<gate> * gatesp;
     vector<Flight> * flightsp;
 
+private:
     // functions only required within the class (objective function value calculation
     void calculate_gate_idle_variance();
     void nflights_assigned_to_apron();

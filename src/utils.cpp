@@ -62,21 +62,6 @@ vector<gate> gateData(string * gatepathp){
     return gates;
 };
 
-vector<vector<int>> gateConflicts(string * gateconflictsp){
-    vector<vector<string>> conflictsString = parse_file(gateconflictsp);
-    vector<vector<int>> conflictsInteger;
-    for (int gateIndex1 = 0; gateIndex1 < conflictsString.size(); ++gateIndex1) {
-        vector<int> rowInteger;
-        for (int gateIndex2 = 0; gateIndex2 < conflictsString.size(); ++gateIndex2) {
-            rowInteger.push_back(stoi(conflictsString[gateIndex1][gateIndex2]));
-        }
-        rowInteger.shrink_to_fit();
-        if (rowInteger.size() != conflictsString.size()){
-            throw logic_error("Gate conflict row size error");
-        }
-        conflictsInteger.push_back(rowInteger);
-    }
-};
 
 vector<Flight> flightData(string * flightplanpathp){
     vector<vector<string>> content = parse_file(flightplanpathp);
@@ -123,16 +108,15 @@ struct tm time_parser(string datetime){
 
 vector<vector<bool>> convert_to_bool(vector<vector<string>> original, const int xdim, const int ydim){
     vector<vector<bool>> converted;
-    for (int i = 1; i < xdim; ++i) {
+    for (int i = 1; i <= xdim; ++i) {
         vector<bool> row;
-        for (int j = 1; j < ydim; ++j) {
+        for (int j = 1; j <= ydim; ++j) {
             if (stoi(original[i][j]) == 1){
                 row.push_back(true);
             } else row.push_back(false);
         }
         converted.push_back(row);
     }
-    cout << converted[0][0] << endl;
     return converted;
 }
 
@@ -167,8 +151,10 @@ vector<vector<int>> vector_matrix(int x, int y){
 
 vector<vector<bool>> vector_matrix_bool(int x, int y){
     vector<vector<bool>> vectorMatrix;
+//    vectorMatrix.reserve(x);
     for (int i = 0; i < x; ++i) {
         vector<bool> gateAssignment;
+//        gateAssignment.reserve(y);
         for (int j = 0; j < y; ++j) {
             gateAssignment.push_back(true);
         }

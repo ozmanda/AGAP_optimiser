@@ -23,6 +23,9 @@ Epoch::Epoch(float *initialTemperaturep, Solution *initialSolutionp, vector<Flig
     // assign temperature, current solution and initialise empty candidate solution
     temperature = *initialTemperaturep;
     currentSolution = *initialSolutionp;
+    currentSolution.gatesp = gatesp;
+    currentSolution.flightsp = flightsp;
+    candidateSolution = Solution(gatesp, flightsp);
 
     // initialise archive
 
@@ -177,7 +180,8 @@ float Epoch::calculate_deltaE(vector<Solution> * FTildep, Solution * candidatep,
 
 
 void Epoch::generate_neighbour() {
-    Solution neighbourSolution(gatesp, flightsp);
+    candidateSolution = Solution(gatesp, flightsp);
+    candidateSolution.assignment = currentSolution.assignment;
     bool solutiongenerated = false;
     int counter = 0;
     while (not solutiongenerated) {
@@ -185,17 +189,19 @@ void Epoch::generate_neighbour() {
         int randNum = random_number(1, 3);
         if (randNum == 1) {
             try {
+                cout << "attempting insert move" << endl;
                 insert_move();
                 solutiongenerated = true;
             } catch (logic_error) {
                 if (++counter == 10){
                     cout << "Solution generation failed" << endl;
-                    throw ios_base::failure("No solution generated");
+                    throw ("No solution generated");
                 }
                 continue;
             }
         } else if (randNum == 2) {
             try {
+                cout << "attempting interval exchange move" << endl;
                 interval_exchange_move();
                 solutiongenerated = true;
             } catch (logic_error) {
@@ -207,6 +213,7 @@ void Epoch::generate_neighbour() {
             }
         } else if (randNum == 3) {
             try {
+                cout << "attempting apron exchange move" << endl;
                 apron_exchange_move();
                 solutiongenerated = true;
             } catch (logic_error) {
@@ -218,33 +225,29 @@ void Epoch::generate_neighbour() {
             }
         }
     }
-    candidateSolution = neighbourSolution;
+//    candidateSolution = neighbourSolution;
     candidateSolution.set_objective_functions();
     ++generatedSolutions;
 }
 
 
 void Epoch::insert_move() {
-    int flightIndex = random_number(0, flightsp->size());
+    int flightIndex = random_number(0, flightsp->size()-1);
     vector<int> availableGates;
-    for (int gateIndex = 0; gateIndex < gatesp->size(); ++gateIndex) {
-        if (gate_availability(flightIndex, gateIndex)) {
+    int currentGateIndex;
+    for (int gateIndex = 1; gateIndex < gatesp->size(); ++gateIndex) {
+        if (currentSolution.assignment[gateIndex][flightIndex] != 1  && gate_availability(flightIndex, gateIndex)) {
             availableGates.push_back(gateIndex);
+        } else if (currentSolution.assignment[gateIndex][flightIndex] == 1){
+            currentGateIndex = gateIndex;
         }
     }
     if (!availableGates.empty()) {
-        Solution insertSolution;
-        int newGateIndex = random_number(0, availableGates.size());
-        for (int gateIndex = 0; gateIndex < gatesp->size(); ++gateIndex) {
-            if (gateIndex == newGateIndex) {
-                continue;
-            } else if (currentSolution.assignment[gateIndex][flightIndex] == 1) {
-                candidateSolution.assignment[gateIndex][flightIndex] = 0;
-                candidateSolution.assignment[newGateIndex][flightIndex] = 1;
-                break;
-            }
-        }
-    }
+        // randomly select new gate from available gates, remove previous assignment and assign to new gate
+        int newGateIndex = availableGates[random_number(0, availableGates.size()-1)];
+        candidateSolution.assignment[currentGateIndex][flightIndex] = 0;
+        candidateSolution.assignment[newGateIndex][flightIndex] = 1;
+    } else throw logic_error("No available gate for insert move");
 }
 
 
@@ -252,19 +255,45 @@ void Epoch::interval_exchange_move() {
     interval intervalA;
     intervalA.flightIndices.push_back(random_number(0, flightsp->size()));
     set_current_gate(&intervalA);
+    if (intervalA.currentGateIndex > 5){
+        set_current_gate(&intervalA);
+    }
+    // initialise times t2 and t3
     intervalA.t2 = (*flightsp)[intervalA.flightIndices[0]].arrS;
     intervalA.t3 = (*flightsp)[intervalA.flightIndices[0]].depS;
+    // determine times t1 and t4
+    prior_flight(& intervalA);
+    next_flight(& intervalA);
+
 
     interval intervalB;
+    int counter = 0;
+    bool conflict = false;
+    cout << "  Finding conflict flight" << endl;
+
+    try {
+        intervalB.flightIndices.push_back(sample_conflicting_flight(intervalA.flightIndices[0]));
+        conflict = true;
+    }
+    catch (logic_error){
+        throw logic_error("Interval exchange move failed: no conflict flight found");
+    }
+
     set_current_gate(&intervalB);
-    intervalB.flightIndices.push_back(sample_conflicting_flight(intervalA.flightIndices[0]));
+    if (intervalB.currentGateIndex > 5){
+        int x = 5;
+    }
+    // initialise times t2 and t3
     intervalB.t2 = (*flightsp)[intervalB.flightIndices[0]].arrS;
     intervalB.t3 = (*flightsp)[intervalB.flightIndices[0]].depS;
+    // determine times t1 and t4
+    prior_flight(& intervalB);
+    next_flight(& intervalB);
+
 
     bool compatible = interval_compatible(&intervalA, &intervalB);
+    counter = 0;
     while (not compatible) {
-        int counter = 0;
-        bool success = false;
         if (intervalA.t2 < intervalB.t1) {
             try {
                 prior_flight(&intervalB);
@@ -303,6 +332,16 @@ void Epoch::interval_exchange_move() {
             cout << "Interval Exchange Move exceeded 20 adaptations" << endl;
         }
     }
+
+    // once intervals are compatible, switch their gate assignments
+    for (int flightIndexA = 0; flightIndexA < intervalA.flightIndices.size(); ++flightIndexA) {
+        candidateSolution.assignment[intervalA.currentGateIndex][flightIndexA] = 0;
+        candidateSolution.assignment[intervalB.currentGateIndex][flightIndexA] = 1;
+    }
+    for (int flightIndexB = 0; flightIndexB < intervalA.flightIndices.size(); ++flightIndexB) {
+        candidateSolution.assignment[intervalB.currentGateIndex][flightIndexB] = 0;
+        candidateSolution.assignment[intervalA.currentGateIndex][flightIndexB] = 1;
+    }
 }
 
 
@@ -323,95 +362,76 @@ void Epoch::set_current_gate(interval * flightInterval){
 }
 
 
-void Epoch::next_flight(interval *flightInterval) {
-    bool success = false;
-    if (flightInterval->nextFlightIndex == -1) {
-        // determine next flight at the gate after the interval and adjust interval values
-        long long timediff = 100000;
-        for (int flightIndex = 0; flightIndex < flightsp->size(); ++flightIndex) {
-            if (currentSolution.assignment[flightInterval->currentGateIndex][flightIndex] == 1 and
-                (*flightsp)[flightIndex].arrS > flightInterval->t3 and
-                (*flightsp)[flightIndex].arrS - flightInterval->t3 < timediff) {
-                flightInterval->nextFlightIndex = flightIndex;
-                timediff = (*flightsp)[flightIndex].arrS - flightInterval->t3;
-                success = true;
-            }
-        }
-        if (success){
-            flightInterval->t4 = (*flightsp)[flightInterval->nextFlightIndex].arrS;
-        } else {
-            throw logic_error("No initial next flight could be found");
-        }
-    } else {
-        // add the index of the next flight to the interval and adjust t3
+void Epoch::next_flight(interval * flightInterval) {
+    // if this is not the first time the function is called, extend the interval forwards
+    if (flightInterval->nextFlightIndex != -1) {
+        // add next flight to list of flight in interval
         flightInterval->flightIndices.push_back(flightInterval->nextFlightIndex);
-        flightInterval->t3 = (*flightsp)[flightInterval->nextFlightIndex].arrS;
+        flightInterval->flightIndices.shrink_to_fit();
+        // change value of t3 to new last flight
+        flightInterval->t3 = (*flightsp)[flightInterval->nextFlightIndex].depS;
+    }
 
-        // determine the index of the next flight and adjust interval values
-        long long timediff = 100000;
-        for (int flightIndex = 0; flightIndex < flightsp->size(); ++flightIndex) {
-            if (currentSolution.assignment[flightInterval->currentGateIndex][flightIndex] == 1 and
-                (*flightsp)[flightIndex].arrS > (*flightsp)[flightInterval->nextFlightIndex].arrS and
-                (*flightsp)[flightIndex].arrS - (*flightsp)[flightInterval->nextFlightIndex].arrS < timediff) {
-                flightInterval->nextFlightIndex = flightIndex;
-                timediff = (*flightsp)[flightIndex].arrS - flightInterval->t3;
-                success = true;
-            }
+    // determine next flight at the gate after the interval and adjust interval values
+    long long timediff = 100000;
+    int nextFlightIndex = -1;
+    for (int flightIndex = 0; flightIndex < flightsp->size(); ++flightIndex) {
+        if (flightIndex != flightInterval->flightIndices[flightInterval->flightIndices.size()] and
+        currentSolution.assignment[flightInterval->currentGateIndex][flightIndex] == 1 and
+        0 < (*flightsp)[flightIndex].arrS - flightInterval->t3 and
+        (*flightsp)[flightIndex].arrS - flightInterval->t3 < timediff) {
+
+            nextFlightIndex = flightIndex;
+            timediff = (*flightsp)[flightIndex].arrS - flightInterval->t3;
         }
-        if (success){
-            flightInterval->t4 = (*flightsp)[flightInterval->nextFlightIndex].arrS;
-        } else {
-            throw logic_error("No next flight could be found");
-        }
+    }
+    if (nextFlightIndex != -1) {
+        flightInterval->t4 = (*flightsp)[nextFlightIndex].arrS;
+        flightInterval->nextFlightIndex = nextFlightIndex;
+    } else {
+        flightInterval->t4 = 1000000000000;
     }
 }
 
 
 void Epoch::prior_flight(interval *flightInterval) {
-    bool success = false;
-    if (flightInterval->nextFlightIndex == -1) {
-        // determine previous flight at the gate before the interval and adjust interval values
-        long long timediff = 100000;
-        for (int flightIndex = 0; flightIndex < flightsp->size(); ++flightIndex) {
-            if (currentSolution.assignment[flightInterval->currentGateIndex][flightIndex] == 1 and
-                (*flightsp)[flightIndex].depS < flightInterval->t2 and
-                flightInterval->t2 - (*flightsp)[flightIndex].depS < timediff) {
-                flightInterval->previousFlightIndex = flightIndex;
-                timediff = flightInterval->t2 - (*flightsp)[flightIndex].depS;
-                success = true;
-            }
-        }
-        if (success){
-            flightInterval->t1 = (*flightsp)[flightInterval->previousFlightIndex].depS;
-        } else {
-            throw logic_error("No initial prior flight could be found");
-        }
-    } else {
-        // add the index of the next flight to the interval and adjust t3
+    // if this is not the first time the function is called, extend the interval backwards
+    if (flightInterval->previousFlightIndex != -1){
+        // add prior flight to list of flights in interval
         flightInterval->flightIndices.insert(flightInterval->flightIndices.begin(),
                                              flightInterval->previousFlightIndex);
-        flightInterval->t1 = (*flightsp)[flightInterval->previousFlightIndex].depS;
+        // change value of t2 to new leading flight
+        flightInterval->t2 = (*flightsp)[flightInterval->previousFlightIndex].arrS;
+        bool init = true;
+    }
 
-        // determine the index of the next flight and adjust interval values
-        long long timediff = 100000;
-        for (int flightIndex = 0; flightIndex < flightsp->size(); ++flightIndex) {
-            if (currentSolution.assignment[flightInterval->currentGateIndex][flightIndex] == 1 and
-                (*flightsp)[flightIndex].depS > (*flightsp)[flightInterval->previousFlightIndex].arrS and
-                (*flightsp)[flightIndex].depS - (*flightsp)[flightInterval->previousFlightIndex].arrS < timediff) {
-                flightInterval->previousFlightIndex = flightIndex;
-                timediff = flightInterval->t2 - (*flightsp)[flightIndex].depS;
-                success = true;
-            }
+    long long timediff = 100000;
+    int priorFlightIndex = -1;
+    for (int flightIndex = 0; flightIndex < flightsp->size(); ++flightIndex) {
+        long long deltaT = flightInterval->t2 - (*flightsp)[flightIndex].depS;
+        if (flightIndex != flightInterval->flightIndices[0] and
+        currentSolution.assignment[flightInterval->currentGateIndex][flightIndex] == 1 and
+        0 < flightInterval->t2 - (*flightsp)[flightIndex].depS and
+        flightInterval->t2 - (*flightsp)[flightIndex].depS < timediff){
+            priorFlightIndex = flightIndex;
+            timediff = flightInterval->t2 - (*flightsp)[flightIndex].depS;
         }
-        if (success){
-            flightInterval->t1 = (*flightsp)[flightInterval->previousFlightIndex].depS;
-        } else {
-            throw logic_error("No prior flight could be found");
-        }
+    }
+    if (priorFlightIndex != -1){
+        flightInterval->t1 = (*flightsp)[priorFlightIndex].depS;
+        flightInterval->previousFlightIndex = priorFlightIndex;
+    } else {
+        flightInterval->t1 = 0;
     }
 }
 
 void Epoch::apron_exchange_move() {
+    int apronFlight = 1;
+    candidateSolution.assignment = currentSolution.assignment;
+    candidateSolution.assignment[2][apronFlight] = 0;
+    currentSolution.assignment[2][apronFlight] = 0;
+    candidateSolution.assignment[0][apronFlight] = 1;
+    currentSolution.assignment[0][apronFlight] = 1;
     // find all aircraft assigned to the apron
     vector<int> apronFlights;
     for (int flightIndex = 0; flightIndex < flightsp->size(); ++flightIndex) {
@@ -422,17 +442,17 @@ void Epoch::apron_exchange_move() {
     if (apronFlights.empty()){
         throw logic_error("No apron flights available for exchange");
     } else  {
-        int flightIndex = random_number(0, apronFlights.size());
+        int flightIndex = apronFlights[random_number(0, apronFlights.size()-1)];
         int conflictingFlightIndex = sample_conflicting_flight(flightIndex);
         // determine gate conflicting flight is assigned to
         for (int gateIndex = 0; gateIndex < gatesp->size(); ++gateIndex) {
             if (currentSolution.assignment[gateIndex][conflictingFlightIndex] == 1) {
                 // switch assignment at the contact stand
-                currentSolution.assignment[gateIndex][conflictingFlightIndex] = 0;
-                currentSolution.assignment[gateIndex][flightIndex] = 1;
+                candidateSolution.assignment[gateIndex][conflictingFlightIndex] = 0;
+                candidateSolution.assignment[gateIndex][flightIndex] = 1;
                 // switch assignment on the apron
-                currentSolution.assignment[0][conflictingFlightIndex] = 1;
-                currentSolution.assignment[0][flightIndex] = 0;
+                candidateSolution.assignment[0][conflictingFlightIndex] = 1;
+                candidateSolution.assignment[0][flightIndex] = 0;
                 break;
             }
         }
@@ -449,34 +469,33 @@ int Epoch::sample_conflicting_flight(int flightIndex) {
             conflictingFlights.push_back(conflictingFlightIndex);
         }
     }
-    int conflictingFlightIndex = random_number(0, conflictingFlights.size());
-    return conflictingFlightIndex;
+    if (conflictingFlights.size() != 0){
+        int conflictingFlightIndex = conflictingFlights[random_number(0, conflictingFlights.size()-1)];
+        return conflictingFlightIndex;
+    } else {
+        throw logic_error("No conflicting flight found");
+    }
 }
 
 
 bool Epoch::gate_availability(int flightIndex, int gateIndex) {
-    // available until proven not to be
-    bool available = true;
-
     // either the gate can handle both NB and WB or it has one size which must == that of the A/C
     if ((*gatesp)[gateIndex].body.size() != 2 and (*gatesp)[gateIndex].body[0] != (*flightsp)[flightIndex].body) {
         return false;
     }
     // for each conflicting flight ...
     for (int conflictFlight = 0; conflictFlight < (*flightsp).size(); ++conflictFlight) {
-        if (flightIndex == conflictFlight) { continue; }
-        if ((*flightConflictsp)[flightIndex][conflictFlight]) {
+        // if flight in conflict (and not identical)
+        if (flightIndex != conflictFlight and (*flightConflictsp)[flightIndex][conflictFlight] == 1) {
             // evaluate if it assigned to this gate
-            if (currentSolution.assignment[gateIndex][flightIndex] == 1) {
+            if (currentSolution.assignment[gateIndex][conflictFlight] == 1) {
                 return false;
-                break;
             }
             // evaluate if it assigned to a conflicting gate
             for (int conflictGate = 0; conflictGate < (*gatesp).size(); ++conflictGate) {
-                if ((*gateConflictsp)[gateIndex][conflictGate] and
+                if ((*gateConflictsp)[gateIndex][conflictGate] == 1 and
                     currentSolution.assignment[conflictGate][conflictFlight] == 1) {
                     return false;
-                    break;
                 }
             }
         }

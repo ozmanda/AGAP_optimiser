@@ -14,24 +14,28 @@
 
 class SA {
 public:
+    // Constructor
     SA(vector<gate> * gates, vector<Flight> * flights, string * gateConflictPath);
+
     // Functions to be used from outside the class
     void run_optimiser();
+
     // Variables which must be visible from outside the class
     Solution currentSolution;
     vector<gate> * gates;
     vector<Flight> * flights;
     Archive archive;
 private:
+    // Private variables
     const int nGates, nFlights;
     vector<vector<bool>> flightConflicts;
     vector<vector<bool>> gateConflicts;
     float temperature;
     Epoch epoch;
-    vector<vector<int>> emptyAssignment;
+
     // functions for private calculations
     vector<vector<bool>> find_flight_conflicts(vector<Flight> * flights) const;
-    Solution greedy();
+    void greedy();
     float calculate_initial_temperature();
     bool gate_availability(Solution * greedySolution, int flightIndex, int gateIndex);
 

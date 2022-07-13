@@ -32,15 +32,16 @@ private:
     struct interval {
         time_t t1, t2, t3, t4;
         vector<int> flightIndices;
-        int nextFlightIndex, previousFlightIndex = -1;
+        int nextFlightIndex = -1;
+        int previousFlightIndex = -1;
         int currentGateIndex;
     };
 
     // pointers to data outside of class
     vector<Flight> * flightsp{};
     vector<gate> * gatesp{};
-    vector<vector<bool>> * gateConflictsp{};
     vector<vector<bool>> * flightConflictsp{};
+    vector<vector<bool>> * gateConflictsp{};
 
     // private functions for running an epoch
     void evaluate_acceptance();
